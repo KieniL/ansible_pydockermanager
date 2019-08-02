@@ -1,0 +1,97 @@
+---
+- hosts: docker
+  gather_facts: no
+  sudo: yes
+  vars:
+   http_port: 80
+   domain: 192.168.56.104
+   repoPath: '/etc/dockermanager'
+   applicationName: dockermanager
+   availabePath: "/etc/apache2/sites-available/{{ applicationName }}.conf"
+   enablePath: "/etc/apache2/sites-enabled/{{ applicationName }}.conf"
+  tasks:
+  #- name: set repoPath
+   # set_fact:
+    # repoPath: '/etc/dockermanager'
+  - name: update apt
+    apt:
+     update_cache: yes
+  - name: install git, python and docker
+    apt: pkg={{item}} state=present
+    with_items:
+     - apache2
+     - libapache2-mod-wsgi-py3
+     - git
+     - python3
+     - apt-transport-https
+     - ca-certificates
+     - curl
+     - software-properties-common
+     - python3-pip
+     - virtualenv
+     - python3-setuptools
+     - python-dev
+  - name: Add Docker GPG apt Key
+    apt_key:
+     url: https://download.docker.com/linux/ubuntu/gpg
+     state: present
+  - name: Add Docker Repository
+    apt_repository:
+     repo: deb https://download.docker.com/linux/ubuntu bionic stable
+     state: present
+  - name: Update apt and install docker-ce
+    apt: update_cache=yes name=docker-ce state=latest
+  - name: Remove existing local modified version of software
+    file:
+     path: "{{repoPath}}"
+     state: absent
+  - name: Remove symbollink
+    file:
+     path: "{{enablePath}}"
+     state: absent
+  - name: Remove Apache configfile
+    file:
+     path: "{{availabePath}}"
+     state: absent
+  - name: Download software from repo
+    git:
+     repo: https://github.com/Kreidl/pydockermanager.git
+     dest: "{{repoPath}}"
+     version: master
+     update: yes
+  - name: Make install.sh an executable
+    file:
+      path: "{{repoPath}}/install.sh" 
+      mode: '755'
+  - name: Make app.py an executable
+    file:
+      path: "{{repoPath}}/app.py" 
+      mode: '755'
+  - name: Execute the installscript
+    command: sh "{{repoPath}}/install.sh"
+  - name: Create wsgi file for webserver
+    copy:
+     dest: "{{repoPath}}/app.wsgi"
+     src: app.wsgi   
+    notify: restart apache
+  - name: Create Apache config file for application
+    copy: 
+     src: virtualhost_apache.conf
+     dest: "{{availabePath}}"
+  - name: link app config
+    file:
+     path: "{{enablePath}}"
+     src: "{{availabePath}}"
+     dest: "{{enablePath}}"
+     state: link
+  #- name: enable virtualhost
+   # comand: a2ensite "{{applicationName}}"
+    #args:
+     #creates: /etc/apache2/sites-enables/{{applicationName}}.confs
+  #  notify:
+  #  - restart apache2
+  handlers:
+    - name: restart apache
+      service:
+       name: apache2
+       state: restarted
