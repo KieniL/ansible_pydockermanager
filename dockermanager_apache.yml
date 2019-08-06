@@ -5,7 +5,7 @@
   vars:
    http_port: 80
    domain: 192.168.56.104
-   repoPath: '/etc/dockermanager'
+   repoPath: '/var/www/dockermanager'
    applicationName: dockermanager
    availabePath: "/etc/apache2/sites-available/{{ applicationName }}.conf"
    enablePath: "/etc/apache2/sites-enabled/{{ applicationName }}.conf"
@@ -59,21 +59,19 @@
      dest: "{{repoPath}}"
      version: master
      update: yes
-  - name: Make install.sh an executable
-    file:
-      path: "{{repoPath}}/install.sh" 
-      mode: '755'
-  - name: Make app.py an executable
-    file:
-      path: "{{repoPath}}/app.py" 
-      mode: '755'
-  - name: Execute the installscript
-    command: sh "{{repoPath}}/install.sh"
   - name: Create wsgi file for webserver
     copy:
-     dest: "{{repoPath}}/app.wsgi"
-     src: app.wsgi   
+     dest: "{{repoPath}}/main.wsgi"
+     src: main.wsgi   
     notify: restart apache
+  - name: make everything an executable
+    file:
+      path: "{{repoPath}}"
+      mode: '755'
+      owner: lukas
+      recurse: yes
+  - name: Execute the installscript
+    command: sh "{{repoPath}}/install.sh"
   - name: Create Apache config file for application
     copy: 
      src: virtualhost_apache.conf
@@ -84,12 +82,11 @@
      src: "{{availabePath}}"
      dest: "{{enablePath}}"
      state: link
-  #- name: enable virtualhost
-   # comand: a2ensite "{{applicationName}}"
-    #args:
-     #creates: /etc/apache2/sites-enables/{{applicationName}}.confs
-  #  notify:
-  #  - restart apache2
+  - name: adding existing user www-data to group docker
+    user:
+     name: 'www-data'
+     groups: docker
+     append: yes
   handlers:
     - name: restart apache
       service:

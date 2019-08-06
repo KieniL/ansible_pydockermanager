@@ -17,3 +17,9 @@ In Inventory file there should be a docker group with variables how define a use
 The command should be ansible-playbook dockermanager.yml -K
 
 -K --> Ask for become password (password as the user to use sudo)
+
+
+Apache Deployment:
+The yml uses the conf and wsgi file to deploy to create a new apache configuration for the host docker.
+
+It also adds the apache service user www-data to the docker group to allow execution of docker commands.
