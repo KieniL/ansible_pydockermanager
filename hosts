@@ -1,0 +1,7 @@
+[docker]
+192.168.56.106
+
+[docker:vars]
+ansible_user=lukas
+ansible_password=Kienast
+ansible_python_interpreter=/usr/bin/python3

@@ -1,36 +1,34 @@
 ---
 - hosts: docker
   gather_facts: no
-  sudo: yes
+  remote_user: lukas
+  become: yes
   vars:
-   http_port: 80
-   domain: 192.168.56.104
    repoPath: '/var/www/dockermanager'
    applicationName: dockermanager
    availabePath: "/etc/apache2/sites-available/{{ applicationName }}.conf"
    enablePath: "/etc/apache2/sites-enabled/{{ applicationName }}.conf"
   tasks:
-  #- name: set repoPath
-   # set_fact:
-    # repoPath: '/etc/dockermanager'
   - name: update apt
     apt:
      update_cache: yes
   - name: install git, python and docker
-    apt: pkg={{item}} state=present
-    with_items:
-     - apache2
-     - libapache2-mod-wsgi-py3
-     - git
-     - python3
-     - apt-transport-https
-     - ca-certificates
-     - curl
-     - software-properties-common
-     - python3-pip
-     - virtualenv
-     - python3-setuptools
-     - python-dev
+    apt:
+     name:
+      - apache2
+      - libapache2-mod-wsgi-py3
+      - git
+      - python3
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - virtualenv
+      - python3-setuptools
+      - python-dev
+     state: present
+     autoclean: yes
   - name: Add Docker GPG apt Key
     apt_key:
      url: https://download.docker.com/linux/ubuntu/gpg
